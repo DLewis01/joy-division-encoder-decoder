@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colour Alphabet Encoder / Decoder</title>
+<style>
+:root {
+  --bg: #f5f6f4;
+  --panel: #ffffff;
+  --ink: #111;
+  --muted: #666;
+  --line: #d8d8d8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 28px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+main { max-width: 1100px; margin: auto; }
+h1 { margin: 0 0 6px; }
+.subtitle { color: var(--muted); margin: 0 0 24px; }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  font: 16px/1.4 monospace;
+}
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+button {
+  border: 1px solid #aaa;
+  background: #fff;
+  color: #111;
+  border-radius: 7px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+button:hover { background: #eee; }
+button.primary { background: #111; color: white; border-color: #111; }
+button.danger { color: #a00; }
+h2 { font-size: 18px; margin: 0 0 12px; }
+.code-output {
+  min-height: 95px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafafa;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 14px/1.7 monospace;
+}
+.token {
+  display: inline-flex;
+  vertical-align: middle;
+  height: 30px;
+  margin: 2px 3px;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid #aaa;
+}
+.token i {
+  width: 18px;
+  height: 100%;
+  display: block;
+}
+.token.space {
+  width: 14px;
+  height: 26px;
+  border: 0;
+  margin: 2px 8px;
+}
+.palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+  gap: 8px;
+}
+.letter-btn {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 7px;
+  align-items: center;
+  text-align: left;
+  min-height: 56px;
+  padding: 6px;
+}
+.letter-btn strong {
+  font-size: 20px;
+  text-align: center;
+  line-height: 1.05;
+}
+.letter-btn strong small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+}
+.swatch-stack {
+  height: 34px;
+  display: flex;
+  border: 1px solid #888;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.swatch-stack span { flex: 1; }
+.hex {
+  font-size: 9px;
+  line-height: 1.1;
+  color: #555;
+  margin-top: 3px;
+  font-family: monospace;
+}
+.decoded {
+  min-height: 70px;
+  padding: 14px;
+  border: 2px dashed #bbb;
+  border-radius: 8px;
+  font-size: 24px;
+  letter-spacing: 2px;
+  word-break: break-word;
+}
+.help {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.settings {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+label { font-weight: 600; }
+select {
+  padding: 8px;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+}
+</style>
+</head>
+
+<body>
+<main>
+  <h1>Colour Alphabet Encoder / Decoder</h1>
+  <p class="subtitle">
+    A digital version of the circular colour alphabet. Each letter is represented
+    by the colours found in its radial sector.
+  </p>
+
+  <section class="panel">
+    <h2>1. Encode a string</h2>
+    <textarea id="inputText" placeholder="Type a message here...">HELLO WORLD</textarea>
+    <div class="controls">
+      <button class="primary" id="encodeBtn">Encode</button>
+      <button id="copyBtn">Copy colour code</button>
+      <button class="danger" id="clearBtn">Clear</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Colour code</h2>
+    <div id="encodedVisual" class="code-output"></div>
+    <p id="encodedHex" class="help"></p>
+    <p class="help"><b>Numbers:</b> 1–9 use the same nine colour sectors as A–I.
+Switch the decoder to <b>Numbers (1–9)</b> and the clickable palette becomes
+1, 2, 3 … 9. In that mode clicking a colour combination inserts the number,
+not the corresponding letter.</p>
+  </section>
+
+  <section class="panel">
+    <h2>2. Decode by clicking colours</h2>
+    <p class="help">
+      Click a letter's colour-code tile below to append that letter to the
+      decoded message. Click the space tile to insert a space. Use Backspace
+      or Clear to edit the result.
+    </p>
+    <div class="settings">
+      <label for="decodeMode">Decode A–I / 1–9 sectors as:</label>
+      <select id="decodeMode">
+        <option value="letter">Letters (A–Z)</option>
+        <option value="number">Numbers (1–9 where available)</option>
+      </select>
+    </div>
+    <br>
+    <div id="decoded" class="decoded"></div>
+    <div class="controls">
+      <button id="backspaceBtn">Backspace</button>
+      <button id="spaceBtn">Space</button>
+      <button class="danger" id="clearDecodedBtn">Clear decoded text</button>
+    </div>
+    <br>
+    <div id="palette" class="palette"></div>
+  </section>
+
+  <section class="panel">
+    <h2>How the code works</h2>
+    <p class="help">
+      The encoder treats each alphabet position as one radial slice of the
+      original diagram. The code for a letter is the combination of the
+      <b>outer-ring colour</b>, <b>middle-ring colour</b>, and the
+      <b>inner six-part colour</b> occupying that slice. This means the visual
+      code preserves the structure of the original wheel rather than reducing
+      each letter to only one colour.
+    </p>
+  </section>
+</main>
+
+<script>
+/*
+ * The first two colour sets are taken from the supplied chart.
+ * The third set represents the six large inner-ring sectors.
+ *
+ * A letter is encoded as:
+ *   [outer colour, middle colour, inner colour]
+ *
+ * Spaces are represented by a gap, rather than a colour.
+ */
+
+const alphabet = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+const numbers = [..."123456789"];
+
+// Colours sampled/approximated from the supplied chart.
+const outer = [
+  "#7caf9a", "#f8d823", "#9380bf", "#cf552a", "#a8cee0", "#d39bc0",
+  "#594184", "#c33186", "#4a91cf", "#6aaa96", "#f8d927", "#8c7ab8",
+  "#d15d32", "#a7cbdc", "#d99dc3", "#59418d", "#c93291", "#4794d1",
+  "#ffffff", "#ffffff", "#7aaf9c", "#f8d927", "#8876ae", "#d45e37",
+  "#a9cedf", "#df9fc4"
+];
+
+const middle = [
+  "#f5d521", "#f5d521", "#f5d521", "#f5d521", "#f5d521", "#f5d521",
+  "#f5d521", "#f5d521", "#70ad9b", "#70ad9b", "#70ad9b", "#70ad9b",
+  "#70ad9b", "#70ad9b", "#70ad9b", "#70ad9b", "#70ad9b", "#70ad9b",
+  "#f5d521", "#f5d521", "#f5d521", "#f5d521", "#f5d521", "#f5d521",
+  "#f5d521", "#f5d521"
+];
+
+// Six broad sectors in the innermost ring.
+const innerSectors = [
+  "#b91f7d", // A-E
+  "#f1c91a", // F-I
+  "#111111", // J-N
+  "#999999", // O-R
+  "#55203f", // S-V
+  "#1d3442"  // W-Z
+];
+
+// Sector assignment for the six inner colours.
+// This follows the six broad radial regions visible in the image.
+const innerIndex = alphabet.map((_, i) => Math.min(5, Math.floor(i / 26 * 6)));
+
+function hex(c) {
+  return c.toUpperCase();
+}
+
+function makeToken(index) {
+  const token = document.createElement("span");
+  token.className = "token";
+  [outer[index], middle[index], innerSectors[innerIndex[index]]].forEach(c => {
+    const s = document.createElement("i");
+    s.style.background = c;
+    token.appendChild(s);
+  });
+  token.title = alphabet[index];
+  return token;
+}
+
+function encodeText(text) {
+  const visual = document.getElementById("encodedVisual");
+  const hexOutput = document.getElementById("encodedHex");
+  visual.innerHTML = "";
+  const parts = [];
+
+  for (const ch of text.toUpperCase()) {
+    let index = alphabet.indexOf(ch);
+    let display = ch;
+
+    // In the original chart, 1-9 occupy the same sectors as A-I.
+    if (index === -1) {
+      const n = numbers.indexOf(ch);
+      if (n !== -1) index = n;
+    }
+
+    if (index === -1) {
+      if (ch === " ") {
+        const gap = document.createElement("span");
+        gap.className = "token space";
+        gap.title = "space";
+        visual.appendChild(gap);
+        parts.push("/");
+      }
+      continue;
+    }
+
+    const token = makeToken(index);
+    token.title = display;
+    visual.appendChild(token);
+
+    parts.push(
+      display + ":" +
+      hex(outer[index]) + "-" +
+      hex(middle[index]) + "-" +
+      hex(innerSectors[innerIndex[index]])
+    );
+  }
+
+  hexOutput.textContent = parts.join("  ");
+}
+function addDecodedValue(value) {
+  document.getElementById("decoded").textContent += value;
+}
+
+function buildPalette() {
+  const palette = document.getElementById("palette");
+
+  function renderPalette(mode) {
+    palette.innerHTML = "";
+
+    const values = mode === "number"
+      ? numbers.map((n, i) => ({ value: n, index: i }))
+      : alphabet.map((letter, i) => ({ value: letter, index: i }));
+
+    values.forEach(({ value, index }) => {
+      const btn = document.createElement("button");
+      btn.className = "letter-btn";
+
+      const strong = document.createElement("strong");
+      strong.innerHTML = value;
+
+      const right = document.createElement("div");
+      const stack = document.createElement("div");
+      stack.className = "swatch-stack";
+
+      [outer[index], middle[index], innerSectors[innerIndex[index]]].forEach(c => {
+        const sw = document.createElement("span");
+        sw.style.background = c;
+        stack.appendChild(sw);
+      });
+
+      const hexes = document.createElement("div");
+      hexes.className = "hex";
+      hexes.textContent =
+        outer[index] + " " + middle[index] + " " +
+        innerSectors[innerIndex[index]];
+
+      right.appendChild(stack);
+      right.appendChild(hexes);
+      btn.appendChild(strong);
+      btn.appendChild(right);
+
+      btn.title = value + " — click to decode this colour combination";
+
+      btn.addEventListener("click", () => addDecodedValue(value));
+      palette.appendChild(btn);
+    });
+  }
+
+  const mode = document.getElementById("decodeMode");
+  renderPalette(mode.value);
+
+  mode.addEventListener("change", () => {
+    // Switching modes changes the actual clickable decoding symbols.
+    renderPalette(mode.value);
+  });
+}
+document.getElementById("encodeBtn").addEventListener("click", () => {
+  encodeText(document.getElementById("inputText").value);
+});
+
+document.getElementById("inputText").addEventListener("input", e => {
+  encodeText(e.target.value);
+});
+
+document.getElementById("spaceBtn").addEventListener("click", () => {
+  const el = document.getElementById("decoded");
+  el.textContent += " ";
+});
+
+document.getElementById("backspaceBtn").addEventListener("click", () => {
+  const el = document.getElementById("decoded");
+  el.textContent = el.textContent.slice(0, -1);
+});
+
+document.getElementById("clearDecodedBtn").addEventListener("click", () => {
+  document.getElementById("decoded").textContent = "";
+});
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  document.getElementById("inputText").value = "";
+  encodeText("");
+});
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const text = document.getElementById("encodedHex").textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Clipboard APIs may be unavailable when opening the file directly.
+    alert("Copy is unavailable in this browser/file context. Select the colour code manually.");
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Backspace" && document.activeElement.id !== "inputText") {
+    document.getElementById("backspaceBtn").click();
+    e.preventDefault();
+  }
+});
+
+buildPalette();
+encodeText(document.getElementById("inputText").value);
+</script>
+</body>
+</html>
